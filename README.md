@@ -88,7 +88,7 @@ slack_reply_to_thread    — 스레드에 답글
 slack_add_reaction       — 메시지에 이모지 반응 추가
 slack_get_channel_history — 채널 히스토리 조회 (채널 ID로 특정 메시지 ts 획득 시 필요)
 ```
-> Slack App 필요 OAuth Scope: `chat:write`, `chat:write.public`, `reactions:write`, `channels:history`
+> Slack App 필요 OAuth Scope: `chat:write`, `chat:write.public`, `reactions:write`, `channels:history`, `channels:read`, `group:read`, `im:read`, `reactions:write`
 
 **OpenStack 툴 (4개):**
 ```

@@ -41,7 +41,8 @@ async def verify_jwt(token: str, redis: Redis) -> TokenPayload:
         raise HTTPException(401, "잘못된 issuer")
     
     session_id = payload.get("session_id")
-    if not await redis.exists(session_id):
+    session_key = f"chat:session:{session_id}"
+    if not await redis.exists(session_key):
         raise HTTPException(403, "세션 없음 또는 만료")
     
     jti = payload.get("jti")

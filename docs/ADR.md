@@ -56,6 +56,26 @@
 
 ---
 
+### ADR-007: RAG 통합 — LangChain Tool로 에이전트에 주입
+
+**결정**: `generate_recovery_policy` 를 MCP Tool이 아닌 LangChain Tool로 구현해 에이전트에 직접 등록한다.
+
+**이유**: RAG 검색(ChromaDB)은 메인 FastAPI 프로세스 내에서 실행된다. MCP Server는 별도 subprocess이므로 ChromaDB에 직접 접근이 불가하다. LangChain Tool로 등록하면 동일 프로세스 내에서 ChromaDB를 공유하면서 에이전트가 호출할 수 있다.
+
+**트레이드오프**: MCP Tool이 아니어서 외부 에이전트가 재사용할 수 없다. 장기적으로 RAG를 별도 HTTP 서비스로 분리하면 MCP Tool화 가능.
+
+---
+
+### ADR-008: 에이전트 LLM — Ollama(개발) → Claude API(프로덕션)
+
+**결정**: 개발 단계에서는 `qwen2.5:7b` (Ollama 로컬)를 임시 사용하되, ADR-001 원칙대로 프로덕션 배포 전에 Claude API로 교체한다. `policy_chain.py` (RAG 정책 생성)는 처음부터 Claude API를 사용한다.
+
+**이유**: RAG 정책 생성은 추론 품질이 직접 복구 결과에 영향을 미치므로 로컬 LLM 타협 불가. 에이전트 오케스트레이터(ReAct)는 개발 속도를 위해 로컬 LLM 임시 허용.
+
+**트레이드오프**: 두 가지 LLM이 혼용되는 일시적 불일치. API 키 설정 후 `agent.py`의 `llm` 변수를 `ChatAnthropic(model="claude-sonnet-4-6")`으로 교체하면 해소.
+
+---
+
 ### ADR-006: ZConverter AI 에이전트 설치 — Userdata 방식
 
 **결정**: VM 생성 시 Nova Userdata 스크립트로 ZConverter Cloud AI 에이전트를 자동 설치한다.

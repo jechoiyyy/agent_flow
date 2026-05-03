@@ -1,5 +1,8 @@
 # 아키텍처: ZIASTACK DR 복구 자동화
 
+> 구현 진행 현황은 [STATUS.md](STATUS.md) 참조.
+> RAG 설계 상세는 [RAG.md](RAG.md) 참조.
+
 ## 컴포넌트 구조
 
 ```
@@ -62,36 +65,50 @@
 └────────────────────────────────────────────────────────┘
 ```
 
-## 디렉토리 구조 (예정)
+## 디렉토리 구조 (실제)
 
 ```
-ziastack-dr/
-├── ui/                        # Django · Horizon
-│   ├── views/                 # 복구 요청, 정책 확인, 상태 모니터링
-│   ├── consumers/             # WebSocket consumers
-│   └── templates/
-├── agent/                     # AI Agent (Claude API)
-│   ├── planner.py             # Plan 단계 — 정책 생성
-│   ├── executor.py            # Execute 단계 — Tool Calling
-│   ├── reporter.py            # Report 단계 — 리포트 생성
-│   └── tools.py               # MCP Tool 정의
-├── mcp/                       # MCP Server
-│   └── server.py              # Streamable HTTP 서버
-├── adapter/                   # FastAPI Internal Adapter
-│   ├── main.py
-│   ├── auth.py                # Pre-shared Key 인증
-│   ├── openstack/             # OpenStack SDK 래퍼
-│   │   ├── nova.py
-│   │   ├── neutron.py
-│   │   ├── cinder.py
-│   │   └── glance.py
-│   ├── state.py               # Redis 상태 관리
-│   └── events.py              # Kafka 이벤트 발행
-├── rag/                       # Chroma RAG
-│   ├── ingest.py              # 런북 인제스트 (TBD)
-│   └── retriever.py           # 복구 정책 검색
-└── db/                        # PostgreSQL 모델
-    └── models.py              # 복구 이력 스키마
+agent_server/
+├── agent_server/
+│   ├── main.py                         # FastAPI 앱, lifespan (MCP 클라이언트 + Agent 초기화)
+│   └── app/
+│       ├── agent/
+│       │   ├── agent.py                # ✅ LangGraph ReAct 에이전트 (현재 qwen2.5, 목표 Claude API)
+│       │   └── tools.py                # ✅ 파괴적 도구 interrupt 래핑 (create_vm, execute_recovery)
+│       ├── auth/
+│       │   ├── jwt_verify.py           # ✅ RS256 JWT 검증 + Redis jti replay 방지
+│       │   └── schema.py               # ✅ TokenPayload 모델
+│       ├── common/
+│       │   ├── config.py               # ✅ pydantic-settings 기반 환경 변수
+│       │   └── redis.py                # ✅ Redis 비동기 클라이언트
+│       ├── ws/
+│       │   └── chat.py                 # ✅ WebSocket 엔드포인트 (이력 복원, interrupt 재개)
+│       ├── knowledge/
+│       │   └── runbooks/               # ❌ 런북 파일 없음 (추가 필요)
+│       ├── rag/                        # ❌ 미구현 (RAG.md 참조)
+│       │   ├── embeddings.py           # 다국어 임베딩 모델
+│       │   ├── vectorstore.py          # ChromaDB 컬렉션 관리
+│       │   ├── ingest.py               # 런북 + 이력 인제스트
+│       │   ├── retriever.py            # MMR 검색 래퍼
+│       │   └── policy_chain.py         # 복구 정책 생성 LCEL 체인
+│       └── mcp_servers/
+│           └── openstack-mcp-server/
+│               ├── main.py             # ✅ stdio MCP 서버
+│               ├── tools/              # ✅ Tool 스키마 정의
+│               │   ├── compute.py      # get_server_info, create_vm
+│               │   └── recovery.py     # execute_recovery, get_recovery_status
+│               └── handlers/           # ⚠️ Mock 구현 (실제 SDK 연동 필요)
+│                   ├── compute.py
+│                   └── recovery.py
+└── docs/
+    ├── PRD.md
+    ├── ARCHITECTURE.md     # 이 파일
+    ├── REQUIREMENTS.md
+    ├── ADR.md
+    ├── USECASES.md
+    ├── UI_GUIDE.md
+    ├── STATUS.md           # ✅ 구현 현황 추적
+    └── RAG.md              # ✅ RAG 설계서
 ```
 
 ## 데이터 흐름
